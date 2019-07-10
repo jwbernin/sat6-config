@@ -1,2 +1,48 @@
 ---
 # tasks file for sat6-config
+- name: Get Organization ID
+  uri:
+    return_content: true
+    user: "{{ satellite_user }}"
+    password: "{{ satellite_password }}"
+    validate_certs: no
+    url: "https://{{ satellite_host }}/katello/api/organizations"
+    force_basic_auth: true
+  register: orglist
+
+- name: Extract results JSON
+  set_fact:
+    results_org: "{{ orglist.content | from_json }}"
+
+- name: Set Org ID
+  set_fact:
+    org_id: "{{ results_org.results[0].id }}"
+
+- name: Set Org Name
+  set_fact:
+    org_name: "{{ results_org.results[0].name }}"
+
+- name: upload manifest to Satellite
+  katello_manifest:
+    username: "{{ satellite_user }}"
+    password: "{{ satellite_password }}"
+    server_url: "https://{{ satellite_host }}"
+    verify_ssl: false
+    organization: "{{ org_name }}"
+    manifest_path: "{{ manifest }}"
+    state: present
+  when: not skip_manifest
+
+- name: Build lifecycle environments
+  katello_lifecycle_environment:
+    name: "{{ item.name }}"
+    organization: "{{ org_name }}"
+    prior: "{{ item.prior | default ('Library') }}"
+    state: present
+    username: "{{ satellite_user }}"
+    password: "{{ satellite_password }}"
+    server_url: "https://{{ satellite_host }}"
+    verify_ssl: false
+  loop: "{{ le_pairs }}"
+
+

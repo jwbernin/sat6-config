@@ -1,38 +1,58 @@
 Role Name
 =========
 
-A brief description of the role goes here.
+This role is designed to fully configure a Satellite 6 instance.
+
+The role development was conducted on RHEL 8 against Satellite 6.5.
 
 Requirements
 ------------
 
-Any pre-requisites that may not be covered by Ansible itself or the role should be mentioned here. For instance, if the role uses the EC2 module, it may be a good idea to mention in this section that the boto package is required.
+This role requires that the Satellite 6 instance be installed and that a valid
+manifest is available. It assumes that the administrator has already run
+``satellite-installer'' on the target Satellite but has not performed
+any other configuration actions. 
 
 Role Variables
 --------------
 
-A description of the settable variables for this role should go here, including any variables that are in defaults/main.yml, vars/main.yml, and any variables that can/should be set via parameters to the role. Any variables that are read from other roles and/or the global scope (ie. hostvars, group vars, etc.) should be mentioned here as well.
+Variables:
+
+satellite_host: FQDN of the Satellite being configured
+satellite_user: username of the initial Satellite user (must be an admin)
+satellite_password: password for the satellite_user account
+
+manifest_file: location of the downloaded manifest file on the Ansible control
+	node
+skip_manifest: if true, skip all actions around uploading a manifest.
+
+le_pairs: listing of lifecycle environments and their prior environments.
+	Must be in order. Any entry without a 'prior' will use 'Library' as
+	the prior.
 
 Dependencies
 ------------
 
-A list of other roles hosted on Galaxy should go here, plus any details in regards to parameters that may need to be set for other roles, or variables that are used from other roles.
+This role makes use of the foreman-ansible-modules currently under development
+at https://github.com/theforeman/foreman-ansible-modules/.
 
 Example Playbook
 ----------------
 
-Including an example of how to use your role (for instance, with variables passed in as parameters) is always nice for users too:
+Basic usage:
 
-    - hosts: servers
+    - hosts: localhost
       roles:
-         - { role: username.rolename, x: 42 }
+         - sat6-config
+
+We attempt to perform all configuration via the Foreman Ansible modules.
 
 License
 -------
 
-BSD
+GPLv3
 
 Author Information
 ------------------
 
-An optional section for the role authors to include contact information, or a website (HTML is not allowed).
+Written by John Berninger, john.berninger@redhat.com
