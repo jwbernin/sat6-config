@@ -69,11 +69,44 @@
     product: "{{ item.product.name }}"
   loop: "{{ repositories.resources }}"
 
-- debug:
-    var: repositories
+# See issue #338 for foreman_ansible_modules -
+# we have to use the command module with a 'hammer' command here.
+# Unfortunately.
+# ... and since the 'nailgun' module isn't something I want to install on
+# any Satellite, we do so through SSH... The comments are how I want to do it.
+- name: Get all Products
+#   foreman_search_facts:
+#     username: "{{ satellite_user }}"
+#     password: "{{ satellite_password }}"
+#     server_url: "https://{{ satellite_host }}"
+#     verify_ssl: false
+#     resource: products
+#     organization_id: "{{ org_id }}"
+#   register: products
+  shell: "ssh root@{{ satellite_host }} /usr/bin/hammer --output json product list --organization {{ org_name }}"
+  register: productscmd
 
-- fail:
-    msg: Failing early - syncs not getting kicked off properly.
+- name: Intake list of products
+  set_fact:
+    products: "{{ (products | default ([])) + [ item.Name ] }}"
+  loop: "{{ productscmd.stdout | from_json }}"
+  when: item.Repositories != 0
+
+- debug:
+    var: products
+
+- name: Create Sync plan
+  katello_sync_plan:
+    username: "{{ satellite_user }}"
+    password: "{{ satellite_password }}"
+    server_url: "https://{{ satellite_host }}"
+    verify_ssl: false
+    name: "Daily Sync of Red Hat Product Repositories"
+    organization: "{{ org_name }}"
+    interval: "{{ sync_interval }}"
+    enabled: true
+    sync_date: "{{ sync_date_time }}"
+    products: "{{ products }}"
 
 - name: Kick off repository Sync tasks
   katello_sync:
@@ -89,6 +122,9 @@
   async: 999999
   poll: 0
   register: repo_sync_sleeper
+
+- fail:
+    msg: Failing early.
 
 - name: Build lifecycle environments
   katello_lifecycle_environment:

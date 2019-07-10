@@ -18,13 +18,24 @@ Role Variables
 
 Variables:
 
+In vault:
 satellite_host: FQDN of the Satellite being configured
 satellite_user: username of the initial Satellite user (must be an admin)
 satellite_password: password for the satellite_user account
 
+Outside vault:
 manifest_file: location of the downloaded manifest file on the Ansible control
 	node
+
 skip_manifest: if true, skip all actions around uploading a manifest.
+
+repos: list of repositories to enable. Each item should contain a 
+	repository label (as name), architecture (as arch), and if
+	applicable a release version (as release).
+
+sync_interval: how often the sync will occur (one of "daily", "hourly",
+	or "weekly"
+sync_date_time: date and time the first scheduled sync should occur.
 
 le_pairs: listing of lifecycle environments and their prior environments.
 	Must be in order. Any entry without a 'prior' will use 'Library' as
