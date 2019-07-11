@@ -43,7 +43,7 @@
     label: "{{ item.name }}"
     repositories:
       - releasever: "{{ item.release | default (omit)}}"
-        basearch: "{{ item.arch }}"
+        basearch: "{{ item.arch | default (omit)}}"
     state: enabled
   loop: "{{ repos }}"
 
@@ -92,9 +92,6 @@
   loop: "{{ productscmd.stdout | from_json }}"
   when: item.Repositories != 0
 
-- debug:
-    var: products
-
 - name: Create Sync plan
   katello_sync_plan:
     username: "{{ satellite_user }}"
@@ -116,15 +113,12 @@
     verify_ssl: false
     product: "{{ item.product.name }}"
     repository:  "{{ item.name }}"
-    organization: "Default Organization"
+    organization: "{{ org_name }}"
   loop: "{{ repositories.resources }}"
   when: item.url  # Not all repositories have a URL
   async: 999999
   poll: 0
   register: repo_sync_sleeper
-
-- fail:
-    msg: Failing early.
 
 - name: Build lifecycle environments
   katello_lifecycle_environment:
