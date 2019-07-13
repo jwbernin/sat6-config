@@ -84,6 +84,21 @@
   poll: 0
   register: repo_sync_sleeper
 
+- name: Wait until all Syncs have finished
+  async_status:
+    jid: "{{ repo_sync_sleeper_item.ansible_job_id }}"
+  loop: "{{ repo_sync_sleeper.results }}"
+  loop_control:
+    loop_var: repo_sync_sleeper_item
+  when: repo_sync_sleeper_item.ansible_job_id is defined  # Skip items that were skipped in the previous task
+  register: async_job_result
+  until: async_job_result.finished
+  # We want to give ourselves a maximum of 6 hours. The timer resets every
+  # time an async job completes, and if you've not completed at least one
+  # repo after 6 hours, you have bandwidth issues.
+  retries: 2160
+  delay: 10
+
 # See issue #338 for foreman_ansible_modules -
 # we have to use the command module with a 'hammer' command here.
 # Unfortunately.
@@ -143,21 +158,6 @@
     repositories: "{{ item.repositories }}"
   loop: "{{ content_views }}"
 
-- name: Wait until all Syncs have finished
-  async_status:
-    jid: "{{ repo_sync_sleeper_item.ansible_job_id }}"
-  loop: "{{ repo_sync_sleeper.results }}"
-  loop_control:
-    loop_var: repo_sync_sleeper_item
-  when: repo_sync_sleeper_item.ansible_job_id is defined  # Skip items that were skipped in the previous task
-  register: async_job_result
-  until: async_job_result.finished
-  # We want to give ourselves a maximum of 6 hours. The timer resets every
-  # time an async job completes, and if you've not completed at least one
-  # repo after 6 hours, you have bandwidth issues.
-  retries: 2160
-  delay: 10
-
 - name: List all Lifecycle Environments
   set_fact:
     le_list: "{{ (le_list | default([])) + [ item.name ] }}"
@@ -174,4 +174,17 @@
     synchronous: true
     lifecycle_environments: "{{ le_list }}"
   loop: "{{ content_views }}"
+  when: not skip_publish
 
+- name: Create Activation Keys
+  katello_activation_key:
+    username: "{{ satellite_user }}"
+    password: "{{ satellite_password }}"
+    server_url: "https://{{ satellite_host }}"
+    verify_ssl: false
+    organization: "{{ org_name }}"
+    name: "{{ item[0].name }}-{{ item[1].name }}-AK"
+    lifecycle_environment: "{{ item[0].name }}"
+    content_view: "{{ item[1].name }}"
+    content_overrides: "{{ ak_overrides }}"
+  loop: "{{ le_pairs | product(content_views) | list }}"
