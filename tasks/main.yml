@@ -69,6 +69,21 @@
     product: "{{ item.product.name }}"
   loop: "{{ repositories.resources }}"
 
+- name: Kick off repository Sync tasks
+  katello_sync:
+    username: "{{ satellite_user }}"
+    password: "{{ satellite_password }}"
+    server_url: "https://{{ satellite_host }}"
+    verify_ssl: false
+    product: "{{ item.product.name }}"
+    repository:  "{{ item.name }}"
+    organization: "{{ org_name }}"
+  loop: "{{ repositories.resources }}"
+  when: item.url  # Not all repositories have a URL
+  async: 999999
+  poll: 0
+  register: repo_sync_sleeper
+
 # See issue #338 for foreman_ansible_modules -
 # we have to use the command module with a 'hammer' command here.
 # Unfortunately.
@@ -105,21 +120,6 @@
     sync_date: "{{ sync_date_time }}"
     products: "{{ products }}"
 
-- name: Kick off repository Sync tasks
-  katello_sync:
-    username: "{{ satellite_user }}"
-    password: "{{ satellite_password }}"
-    server_url: "https://{{ satellite_host }}"
-    verify_ssl: false
-    product: "{{ item.product.name }}"
-    repository:  "{{ item.name }}"
-    organization: "{{ org_name }}"
-  loop: "{{ repositories.resources }}"
-  when: item.url  # Not all repositories have a URL
-  async: 999999
-  poll: 0
-  register: repo_sync_sleeper
-
 - name: Build lifecycle environments
   katello_lifecycle_environment:
     name: "{{ item.name }}"
@@ -132,6 +132,17 @@
     verify_ssl: false
   loop: "{{ le_pairs }}"
 
+- name: Create Content Views
+  katello_content_view:
+    username: "{{ satellite_user }}"
+    password: "{{ satellite_password }}"
+    server_url: "https://{{ satellite_host }}"
+    verify_ssl: false
+    organization: "{{ org_name }}"
+    name: "{{ item.name }}"
+    repositories: "{{ item.repositories }}"
+  loop: "{{ content_views }}"
+
 - name: Wait until all Syncs have finished
   async_status:
     jid: "{{ repo_sync_sleeper_item.ansible_job_id }}"
@@ -141,5 +152,26 @@
   when: repo_sync_sleeper_item.ansible_job_id is defined  # Skip items that were skipped in the previous task
   register: async_job_result
   until: async_job_result.finished
-  retries: 999
+  # We want to give ourselves a maximum of 6 hours. The timer resets every
+  # time an async job completes, and if you've not completed at least one
+  # repo after 6 hours, you have bandwidth issues.
+  retries: 2160
   delay: 10
+
+- name: List all Lifecycle Environments
+  set_fact:
+    le_list: "{{ (le_list | default([])) + [ item.name ] }}"
+  loop: "{{ le_pairs }}"
+
+- name: Publish all Content Views
+  katello_content_view_version:
+    username: "{{ satellite_user }}"
+    password: "{{ satellite_password }}"
+    server_url: "https://{{ satellite_host }}"
+    verify_ssl: false
+    organization: "{{ org_name }}"
+    content_view: "{{ item.name }}"
+    synchronous: true
+    lifecycle_environments: "{{ le_list }}"
+  loop: "{{ content_views }}"
+

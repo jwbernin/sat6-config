@@ -1,0 +1,9 @@
+---
+- name: Configure Satellite
+  hosts: localhost
+  vars_files:
+    - satProtected.yml
+    - satConfig.yml
+
+  roles:
+    - sat6-config

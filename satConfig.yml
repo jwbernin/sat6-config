@@ -1,0 +1,85 @@
+manifest: manifest.zip
+skip_manifest: false
+repos:
+  - name: rhel-7-server-ansible-2.6-rpms
+    arch: x86_64
+  - name: ansible-2.8-for-rhel-8-x86_64-rpms
+  - name: rhel-7-server-extras-rpms
+    arch: x86_64
+  - name: rhel-7-server-kickstart
+    arch: x86_64
+    release: 7.6
+  - name: rhel-7-server-optional-rpms
+    arch: x86_64
+    release: 7Server
+  - name: rhel-7-server-rpms
+    arch: x86_64
+    release: 7Server
+  - name: rhel-6-server-extras-rpms
+    arch: x86_64
+  - name: rhel-6-server-kickstart
+    arch: x86_64
+    release: 6.10
+  - name: rhel-6-server-optional-rpms
+    arch: x86_64
+    release: 6Server
+  - name: rhel-6-server-rh-common-rpms
+    arch: x86_64
+    release: 6Server
+  - name: rhel-6-server-rpms
+    arch: x86_64
+    release: 6Server
+  - name: rhel-6-server-supplementary-rpms
+    arch: x86_64
+    release: 6Server
+  - name: rhel-7-server-rh-common-rpms
+    arch: x86_64
+    release: 7Server
+  - name: rhel-7-server-supplementary-rpms
+    arch: x86_64
+    release: 7Server
+  - name: rhel-8-for-x86_64-appstream-kickstart
+    release: 8.0
+  - name: rhel-8-for-x86_64-appstream-rpms
+    release: 8
+  - name: rhel-8-for-x86_64-baseos-kickstart
+    release: 8.0
+  - name: rhel-8-for-x86_64-baseos-rpms
+    release: 8
+  - name: rhel-8-for-x86_64-supplementary-rpms
+    release: 8
+  - name: rhel-7-server-satellite-maintenance-6-rpms
+    arch: x86_64
+  - name: rhel-6-server-satellite-tools-6.5-rpms
+    arch: x86_64
+  - name: rhel-7-server-satellite-tools-6.5-rpms
+    arch: x86_64
+  - name: satellite-tools-6.5-for-rhel-8-x86_64-rpms
+  - name: rhel-server-rhscl-7-rpms
+    arch: x86_64
+    release: 7Server
+sync_interval: "daily"
+sync_date_time: "2019/06/01 03:00:00 +0000"
+
+le_pairs:
+  - name: Appserver-Dev
+  - name: Appserver-Test
+    prior: Appserver-Dev
+  - name: Appserver-Prod
+    prior: Appserver-Test
+  - name: Appserver-DR
+    prior: Appserver-Prod
+  - name: Webserver-Dev
+  - name: Webserver-Test
+    prior: Webserver-Dev
+  - name: Webserver-Prod
+    prior: Webserver-Test
+  - name: Webserver-DR
+    prior: Webserver-Prod
+  - name: DBserver-Dev
+  - name: DBserver-Test
+    prior: DBserver-Dev
+  - name: DBserver-Prod
+    prior: DBserver-Test
+  - name: DBserver-DR
+    prior: DBserver-Prod
